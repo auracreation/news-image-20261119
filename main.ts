@@ -5,7 +5,7 @@
 // output directory. A byte-for-byte copy involves no randomness, no clock and
 // no network, so two runs necessarily produce identical output — exactly the
 // determinism the grader requires.
-import { copyFileSync, mkdirSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -19,4 +19,14 @@ const source: string = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
   "entry.png",
 );
-copyFileSync(source, path.join(outputDir, "entry.png"));
+
+// Fail with the path that matters instead of a raw ENOENT trace when the image
+// is missing, and confirm the copy on stdout. Stdout never touches the output
+// directory, so the byte determinism of entry.png is unaffected.
+if (!existsSync(source)) {
+  console.error(`entry.png not found next to main.ts (expected ${source})`);
+  process.exitCode = 1;
+} else {
+  copyFileSync(source, path.join(outputDir, "entry.png"));
+  console.log(`wrote ${path.join(outputDir, "entry.png")}`);
+}
